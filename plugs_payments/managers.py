@@ -12,6 +12,7 @@ from rest_framework.exceptions import ValidationError
 
 from plugs_payments.settings import plugs_payments_settings as settings
 from plugs_payments import signals
+
 LOGGER = logging.getLogger(__name__)
 
 class IfThenPaymentManager(models.Manager):
