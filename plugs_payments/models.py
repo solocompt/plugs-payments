@@ -24,7 +24,7 @@ class IfThenPayment(mixins.Timestampable, models.Model):
     is_paid = models.BooleanField(default=False)
     entity = fields.EntityField()
     reference = fields.ReferenceField()
-    value = models.DecimalField(null=False, max_digits=5, decimal_places=2)
+    value = models.DecimalField(null=False, max_digits=20, decimal_places=2)
     payment_date = models.DateTimeField(null=True, blank=True)
     terminal = models.CharField(null=True, blank=True, max_length=40)
     objects = IfThenPaymentManager()
