@@ -33,10 +33,12 @@ class IfThenPayment(mixins.Timestampable, models.Model):
         """
         Mark payment as paid
         """
+        try:
+            self.terminal = data.get('terminal')[0]
+            self.payment_date = self._format_payment_date(data.get('datahorapag')[0])
+        except (TypeError, ValueError):
+            LOGGER.warning('Payment date or Terminal invalid.')
         self.is_paid = True
-        # why is this a list?
-        self.terminal = data.get('terminal')[0]
-        self.payment_date = self._format_payment_date(data.get('datahorapag')[0])
         self.save()
         valid_ifthen_payment_received.send(sender=self)
 
@@ -44,7 +46,7 @@ class IfThenPayment(mixins.Timestampable, models.Model):
         self.bookkeeper = self._generate_bookkeeper()
         self.entity = settings['ENTITY']
         self.reference = self._generate_reference()
-        
+
     def save(self, *args, **kwargs):
         """
         Overrides model save method
@@ -79,16 +81,11 @@ class IfThenPayment(mixins.Timestampable, models.Model):
         return str(self.reference)
 
     def _format_payment_date(self, payment_date):
-        try:
-            # deal with payment_date
-            from_format = "%d-%m-%Y %H:%M:%S"
-            to_format = "%Y-%m-%d %H:%M:%S"
-            payment_date = datetime.strptime(payment_date, from_format).strftime(to_format)
-        except (TypeError, ValueError):
-            message = 'Payment date invalid. Date {0}'
-            LOGGER.warning(message.format(payment_date))
-        return payment_date
-    
+        # deal with payment_date
+        from_format = "%d-%m-%Y %H:%M:%S"
+        to_format = "%Y-%m-%d %H:%M:%S"
+        return datetime.strptime(payment_date, from_format).strftime(to_format)
+
     def _check_digits(self, integrity):
         """
         Integrity string is used to calculate
@@ -109,7 +106,7 @@ class IfThenPayment(mixins.Timestampable, models.Model):
             summatory += int(digit) * multipliers[index]
         result = 98 - (summatory % 97)
         return '{0:02d}'.format(result)
-    
+
     def _format_value(self):
         """
         The value must use 8 digits, we need to
@@ -130,7 +127,7 @@ class IfThenPayment(mixins.Timestampable, models.Model):
         generating references
         """
         return randint(0, 9999)
-    
+
     def _generate_integrity_string(self):
         """
         String that is gonna be used
@@ -142,10 +139,10 @@ class IfThenPayment(mixins.Timestampable, models.Model):
             '{0:04d}'.format(self.bookkeeper),
             self._format_value()
         )
-    
+
     def _generate_reference(self):
         """
-        Generate a reference using the ifthenpay 
+        Generate a reference using the ifthenpay
         payment platform algorithm
         """
         integrity = self._generate_integrity_string()
@@ -153,7 +150,7 @@ class IfThenPayment(mixins.Timestampable, models.Model):
         subentity = str(settings['SUBENTITY'])
         return '{0}{1}{2}'.format(subentity, '{0:04d}'.format(self.bookkeeper), check_digits)
 
-    
+
     # pylint: disable=R0903
     class Meta:
         """
